@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+<title>Phone Calculator Pro</title>
+<style>
+:root{
+  --bg:#eef2f7; --card:#ffffff; --display:#f8fafc; --text:#111827;
+  --muted:#64748b; --border:#dbe2ea; --key:#f1f5f9; --key2:#e2e8f0;
+  --operator:#dbeafe; --operator-text:#1d4ed8; --equal:#2563eb;
+  --danger:#fee2e2; --danger-text:#b91c1c; --shadow:0 18px 45px rgba(15,23,42,.12);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+  font-family:Arial,Helvetica,sans-serif; display:flex; justify-content:center;
+  padding:20px; transition:.25s;
+}
+.app{width:min(100%,1050px); display:grid; grid-template-columns:minmax(300px,430px) minmax(280px,1fr); gap:18px; align-items:start}
+.card{background:var(--card); border:1px solid var(--border); border-radius:22px; box-shadow:var(--shadow); overflow:hidden}
+.calc{padding:18px}
+.topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
+.title{font-size:20px;font-weight:800}.subtitle{font-size:12px;color:var(--muted);margin-top:3px}
+.top-actions{display:flex;gap:7px}
+.icon-btn{border:1px solid var(--border);background:var(--key);color:var(--text);border-radius:10px;width:40px;height:40px;font-size:18px;cursor:pointer}
+.display{background:var(--display);border:1px solid var(--border);border-radius:15px;padding:12px 14px;margin-bottom:12px}
+.expression{height:25px;color:var(--muted);font-size:14px;text-align:right;overflow:hidden;white-space:nowrap}
+.result{width:100%;border:0;outline:0;background:transparent;color:var(--text);font-size:34px;text-align:right;font-weight:700}
+.memory{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px}
+.keys{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+button.key{height:52px;border:1px solid var(--border);border-radius:12px;background:var(--key);color:var(--text);font-size:16px;font-weight:700;cursor:pointer;transition:transform .08s,filter .15s}
+button.key:active{transform:scale(.96)}
+button.key:hover{filter:brightness(.97)}
+.op{background:var(--operator)!important;color:var(--operator-text)!important}
+.equal{background:var(--equal)!important;color:#fff!important}
+.danger{background:var(--danger)!important;color:var(--danger-text)!important}
+.small{font-size:13px!important}
+.scientific{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:8px}
+.scientific.hidden{display:none}
+.section-head{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 10px}
+.section-head h2{font-size:18px;margin:0}
+.history-actions{display:flex;gap:6px}
+.history-list{padding:0 12px 14px;max-height:650px;overflow:auto}
+.history-item{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:7px 4px;background:var(--display)}
+.history-expr{font-size:13px;color:var(--muted);word-break:break-word}
+.history-result{font-size:18px;font-weight:700;margin-top:4px}
+.history-time{font-size:11px;color:var(--muted);margin-top:4px}
+.empty{color:var(--muted);text-align:center;padding:35px 10px}
+.notice{font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.4}
+@media(max-width:760px){
+  body{padding:10px}.app{grid-template-columns:1fr;max-width:520px}.history-list{max-height:320px}
+}
+@media(max-width:390px){
+  .calc{padding:12px}.keys,.scientific{gap:5px}button.key{height:48px;font-size:14px}.result{font-size:29px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="card calc">
+    <div class="topbar">
+      <div><div class="title">Phone Calculator Pro</div><div class="subtitle">Scientific • History</div></div>
+      <div class="top-actions">
+        <button class="icon-btn" id="bgBtn" title="Change background color">🎨</button>
+        <button class="icon-btn" id="sciBtn" title="Scientific mode">ƒ</button>
+      </div>
+    </div>
+
+    <div class="display">
+      <div class="expression" id="expression"></div>
+      <input class="result" id="result" value="0" readonly aria-label="Calculator display">
+    </div>
+<div class="scientific hidden" id="scientific">
+      <button class="key small" data-fn="sin">sin</button>
+      <button class="key small" data-fn="cos">cos</button>
+      <button class="key small" data-fn="tan">tan</button>
+      <button class="key small" data-fn="log">log</button>
+      <button class="key small" data-fn="ln">ln</button>
+      <button class="key small" data-fn="sqrt">√</button>
+      <button class="key small" data-fn="square">x²</button>
+      <button class="key small" data-fn="reciprocal">1/x</button>
+      <button class="key small" data-fn="pi">π</button>
+      <button class="key small" data-fn="e">e</button>
+    </div>
+
+    <div class="keys">
+      <button class="key danger" data-action="clear">C</button>
+      <button class="key" data-action="back">⌫</button>
+      <button class="key" data-value="(">(</button>
+      <button class="key" data-value=")">)</button>
+      <button class="key op" data-value="/">÷</button>
+
+      <button class="key" data-value="7">7</button>
+      <button class="key" data-value="8">8</button>
+      <button class="key" data-value="9">9</button>
+      <button class="key op" data-value="%">%</button>
+      <button class="key op" data-value="*">×</button>
+
+      <button class="key" data-value="4">4</button>
+      <button class="key" data-value="5">5</button>
+      <button class="key" data-value="6">6</button>
+      <button class="key op" data-value="^">xʸ</button>
+      <button class="key op" data-value="-">−</button>
+
+      <button class="key" data-value="1">1</button>
+      <button class="key" data-value="2">2</button>
+      <button class="key" data-value="3">3</button>
+      <button class="key op" data-value="+">+</button>
+
+      <button class="key" data-value="0">0</button>
+      <button class="key" data-value=".">.</button>
+      <button class="key" data-action="equals">=</button>
+      
+    </div>
+    <div class="notice">Keyboard: numbers, + − × ÷, Enter, Backspace, Escape, parentheses and ^</div>
+  </section>
+
+  <section class="card">
+    <div class="section-head">
+      <h2>Calculation History</h2>
+      <div class="history-actions">
+        <button class="icon-btn" id="clearHistory" title="Clear history">🗑</button>
+      </div>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </section>
+</div>
+
+<input id="bgColorPicker" type="color" value="#eef2f7"
+       style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0;">
+<script>
+"use strict";
+
+const result = document.getElementById("result");
+const expressionEl = document.getElementById("expression");
+const historyList = document.getElementById("historyList");
+const scientific = document.getElementById("scientific");
+
+let expression = "";
+let lastWasEqual = false;
+
+function vibrate(){
+  if(navigator.vibrate) navigator.vibrate(12);
+}
+function formatNumber(n){
+  if(!Number.isFinite(n)) throw new Error("Math error");
+  if(Math.abs(n) < 1e-12) n = 0;
+  return Number(n.toPrecision(12)).toString();
+}
+function updateDisplay(){
+  expressionEl.textContent = expression.replaceAll("*","×").replaceAll("/","÷").replaceAll("^","^");
+  result.value = expression || "0";
+}
+function isOperator(ch){ return "+-*/^".includes(ch); }
+
+function appendValue(v){
+  if(lastWasEqual && !isOperator(v) && v !== "%"){
+    expression = "";
+  }
+  lastWasEqual = false;
+
+  if(v === "."){
+    const part = expression.split(/[+\-*/^()]/).pop();
+    if(part.includes(".")) return;
+  }
+  if(isOperator(v)){
+    if(!expression && v !== "-") return;
+    if(isOperator(expression.slice(-1))){
+      expression = expression.slice(0,-1) + v;
+    }else expression += v;
+  }else if(v === "("){
+    if(expression && /[\d.)]/.test(expression.slice(-1))) expression += "*";
+    expression += "(";
+  }else if(v === ")"){
+    const opens=(expression.match(/\(/g)||[]).length;
+    const closes=(expression.match(/\)/g)||[]).length;
+    if(opens>closes && expression && !isOperator(expression.slice(-1)) && expression.slice(-1)!=="(") expression += ")";
+  }else if(v === "%"){
+    applyPercent();
+    return;
+  }else{
+    expression += v;
+  }
+  updateDisplay();
+}
+
+function applyPercent(){
+  if(!expression) return;
+  const m=expression.match(/(\d*\.?\d+)$/);
+  if(!m) return;
+  const n=Number(m[1])/100;
+  expression=expression.slice(0,m.index)+formatNumber(n);
+  updateDisplay();
+}
+
+function backspace(){
+  expression=expression.slice(0,-1); lastWasEqual=false; updateDisplay();
+}
+function clearAll(){
+  expression=""; expressionEl.textContent=""; result.value="0"; lastWasEqual=false;
+}
+function normalize(expr){
+  expr=expr.replace(/(\d|\))\(/g,"$1*(");
+  expr=expr.replace(/\)(\d)/g,")*$1");
+  expr=expr.replace(/\s+/g,"");
+  if(!/^[0-9+\-*/^().]+$/.test(expr)) throw new Error("Invalid input");
+  if(/[+\-*/^.]$/.test(expr)) throw new Error("Incomplete expression");
+  return expr;
+}
+
+/* Small recursive-descent parser: avoids using eval(). */
+function calculate(expr){
+  expr=normalize(expr);
+  let i=0;
+  function peek(){return expr[i]||""}
+  function eat(c){if(peek()===c){i++;return true}return false}
+  function primary(){
+    if(eat("(")){
+      const v=addSub();
+      if(!eat(")")) throw new Error("Missing )");
+      return v;
+    }
+    let start=i;
+    if(peek()==="-") i++;
+    while(/[0-9.]/.test(peek())) i++;
+    if(start===i || (expr[start]==="-" && i===start+1)) throw new Error("Number expected");
+    const n=Number(expr.slice(start,i));
+    if(!Number.isFinite(n)) throw new Error("Invalid number");
+    return n;
+  }
+  function power(){
+    let a=primary();
+    if(eat("^")) a=Math.pow(a,power());
+    return a;
+  }
+  function mulDiv(){
+    let a=power();
+    while(true){
+      if(eat("*")) a*=power();
+      else if(eat("/")){
+        const b=power(); if(b===0) throw new Error("Cannot divide by zero"); a/=b;
+      } else break;
+    }
+    return a;
+  }
+  function addSub(){
+    let a=mulDiv();
+    while(true){
+      if(eat("+")) a+=mulDiv();
+      else if(eat("-")) a-=mulDiv();
+      else break;
+    }
+    return a;
+  }
+  const value=addSub();
+  if(i!==expr.length) throw new Error("Invalid expression");
+  return value;
+}
+
+function doEquals(){
+  if(!expression) return;
+  try{
+    const original=expression;
+    const value=calculate(expression);
+    const formatted=formatNumber(value);
+    addHistory(original,formatted);
+    expression=formatted;
+    expressionEl.textContent=original.replaceAll("*","×").replaceAll("/","÷")+" =";
+    result.value=formatted;
+    lastWasEqual=true;
+  }catch(e){
+    expressionEl.textContent="Error";
+    result.value=e.message || "Error";
+    lastWasEqual=true;
+  }
+}
+
+function addHistory(expr,res){
+  const history=JSON.parse(localStorage.getItem("calcHistory")||"[]");
+  history.unshift({expr,res,time:new Date().toLocaleString()});
+  localStorage.setItem("calcHistory",JSON.stringify(history.slice(0,100)));
+  renderHistory();
+}
+function renderHistory(){
+  const history=JSON.parse(localStorage.getItem("calcHistory")||"[]");
+  if(!history.length){
+    historyList.innerHTML='<div class="empty">No calculations yet.</div>'; return;
+  }
+  historyList.innerHTML=history.map((h,index)=>
+    `<div class="history-item" data-index="${index}">
+      <div class="history-expr">${escapeHtml(h.expr.replaceAll("*","×").replaceAll("/","÷"))}</div>
+      <div class="history-result">= ${escapeHtml(h.res)}</div>
+      <div class="history-time">${escapeHtml(h.time)}</div>
+    </div>`).join("");
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+historyList.addEventListener("click",e=>{
+  const item=e.target.closest(".history-item"); if(!item)return;
+  const h=JSON.parse(localStorage.getItem("calcHistory")||"[]")[Number(item.dataset.index)];
+  if(h){expression=h.res;lastWasEqual=false;updateDisplay();}
+});
+document.getElementById("clearHistory").addEventListener("click",()=>{
+  if(confirm("Clear all calculation history?")){
+    localStorage.removeItem("calcHistory"); renderHistory();
+  }
+});
+
+function currentValue(){
+  try{return expression ? calculate(expression) : Number(result.value)||0}catch{return 0}
+}
+function setValue(n){
+  expression=formatNumber(n); lastWasEqual=false; updateDisplay();
+}
+function scientificFn(fn){
+  try{
+    const x=currentValue(); let v;
+    switch(fn){
+      case "sin":v=Math.sin(x*Math.PI/180);break;
+      case "cos":v=Math.cos(x*Math.PI/180);break;
+      case "tan":v=Math.tan(x*Math.PI/180);break;
+      case "log":if(x<=0)throw new Error("Invalid log");v=Math.log10(x);break;
+      case "ln":if(x<=0)throw new Error("Invalid ln");v=Math.log(x);break;
+      case "sqrt":if(x<0)throw new Error("Invalid √");v=Math.sqrt(x);break;
+      case "square":v=x*x;break;
+      case "reciprocal":if(x===0)throw new Error("Cannot divide by zero");v=1/x;break;
+      case "pi":v=Math.PI;break;
+      case "e":v=Math.E;break;
+    }
+    const old=expression||"0", formatted=formatNumber(v);
+    addHistory(fn+"("+old+")",formatted); setValue(v);
+  }catch(e){expressionEl.textContent="Error";result.value=e.message||"Error";lastWasEqual=true;}
+}
+
+document.querySelectorAll("[data-value]").forEach(btn=>{
+  btn.addEventListener("click",()=>{vibrate();appendValue(btn.dataset.value);});
+});
+document.querySelectorAll("[data-action]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    vibrate(); const a=btn.dataset.action;
+    if(a==="clear")clearAll();
+    else if(a==="back")backspace();
+    else if(a==="equals")doEquals();
+  });
+});
+document.querySelectorAll("[data-fn]").forEach(btn=>{
+  btn.addEventListener("click",()=>{vibrate();scientificFn(btn.dataset.fn);});
+});
+document.getElementById("sciBtn").addEventListener("click",()=>{
+  scientific.classList.toggle("hidden");
+});
+
+document.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="c")return;
+  if(/^[0-9.]$/.test(e.key)) appendValue(e.key);
+  else if(["+","-","*","/","^","(",")"].includes(e.key)) appendValue(e.key);
+  else if(e.key==="%") applyPercent();
+  else if(e.key==="Enter"||e.key==="="){e.preventDefault();doEquals();}
+  else if(e.key==="Backspace")backspace();
+  else if(e.key==="Escape")clearAll();
+});
+const bgBtn = document.getElementById("bgBtn");
+const bgColorPicker = document.getElementById("bgColorPicker");
+
+function applyBackgroundColor(color){
+  document.body.style.background = color;
+  localStorage.setItem("calcBackgroundColor", color);
+}
+const savedBackground = localStorage.getItem("calcBackgroundColor");
+if(savedBackground){
+  applyBackgroundColor(savedBackground);
+  bgColorPicker.value = savedBackground;
+}
+bgBtn.addEventListener("click", () => {
+  bgColorPicker.click();
+});
+bgColorPicker.addEventListener("input", (e) => {
+  applyBackgroundColor(e.target.value);
+});
+
+renderHistory();
+updateDisplay();
+</script>
+</body>
+</html>
