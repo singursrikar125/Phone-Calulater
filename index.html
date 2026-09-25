@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculator with Toggle History</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f2f5;
+      margin: 0;
+    }
+
+    .container {
+      display: flex;
+      gap: 20px;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #calculator {
+      width: 240px;
+    }
+
+    #output {
+      width: 100%;
+      height: 40px;
+      font-size: 20px;
+      text-align: right;
+      padding: 5px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    /* Fixed button grid layout */
+    .buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    button {
+      height: 45px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background-color: #f8f9fa;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #e2e6ea;
+    }
+
+    .span-2 {
+      grid-column: span 2;
+    }
+
+    #historySection {
+      display: none; /* Hidden by default */
+      width: 200px;
+    }
+
+    #historyBox {
+      border: 1px solid #ccc;
+      padding: 10px;
+      height: 205px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      font-family: monospace;
+      font-size: 14px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Calculator Section -->
+    <div id="calculator">
+      <input type="text" id="output" placeholder="0" readonly>
+      
+      <div class="buttons-grid">
+        <button>7</button>
+        <button>8</button>
+        <button>9</button>
+        <button>/</button>
+        
+        <button>4</button>
+        <button>5</button>
+        <button>6</button>
+        <button>*</button>
+        
+        <button>1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>+</button>
+        
+        <button>0</button>
+        <button>.</button>
+        <button>-</button>
+        <button>=</button>
+        
+        <button class="span-2">Back</button>
+        <button class="span-2">C</button>
+        
+        <button id="historyBtn" class="span-2" style="grid-column: span 4;">Show History</button>
+      </div>
+    </div>
+
+    <!-- History Section -->
+    <div id="historySection">
+      <h3>History</h3>
+      <div id="historyBox"></div>
+    </div>
+  </div>
+
+  <script>
+    const output = document.getElementById("output");
+    const buttons = document.querySelectorAll("button");
+    const historyBox = document.getElementById("historyBox");
+    const historySection = document.getElementById("historySection");
+    const historyBtn = document.getElementById("historyBtn");
+
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        let value = button.innerText;
+
+        if (value === "Back") {
+          output.value = output.value.slice(0, -1);
+        } else if (value === "C") {
+          output.value = "";
+        } else if (value === "=") {
+          try {
+            let result = eval(output.value);
+            historyBox.innerHTML += `<div>${output.value} = ${result}</div>`;
+            output.value = result;
+          } catch {
+            output.value = "Error";
+          }
+        } else if (value === "Show History" || value === "Hide History") {
+          if (historySection.style.display === "none" || historySection.style.display === "") {
+            historySection.style.display = "block";
+            historyBtn.innerText = "Hide History";
+          } else {
+            historySection.style.display = "none";
+            historyBtn.innerText = "Show History";
+          }
+        } else {
+          output.value += value;
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
